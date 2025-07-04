@@ -2,7 +2,7 @@
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 # More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
 
-name: Build and deploy Python app to Azure Web App - dev-jnf-payroll
+name: Build and deploy Full-stack app to Azure Web App - dev-jnf-payroll
 
 on:
   push:
@@ -24,15 +24,39 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build React frontend
+        run: |
+          cd frontend
+          npm run build
+
       - name: Create and start virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
       
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
+
+      - name: Copy React build to Flask static folder
+        run: |
+          mkdir -p static
+          cp -r frontend/build/* static/ || true
+          mkdir -p templates
+          cp frontend/build/index.html templates/ || true
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
